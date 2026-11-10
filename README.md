@@ -9,11 +9,32 @@
 
 ---
 
+## 0. 在线版（分享给别人用）
+
+| 用途 | 链接 |
+| --- | --- |
+| **直接打开就能用**（手机 / 平板 / 别人电脑，无需安装任何东西） | https://likewater16888-art.github.io/bearing-vision-guide/ |
+| 仓库（下载、克隆、提 issue、自己改） | https://github.com/likewater16888-art/bearing-vision-guide |
+
+线上版与本地版是**同一份静态文件**：GitHub Pages 把 `web/` 整个目录发布出去，仓库根目录的 `index.html` 只做一次跳转（`→ ./web/index.html`），所以：
+
+- 分享给别人 → **只发网址**即可，对方打开就能查、能练、能抽考。
+- 现场没网 → 把 `web/` 整个目录拷到 U 盘 / 电脑，双击 `index.html`，功能完全一样。
+- 学习进度存在**各自浏览器的 localStorage**，线上版和本地版互不干扰；要带走成绩用「学习记录 → 导出」。
+
+> **改完怎么更新线上版**：改文件 → `git commit` → `git push`，Pages 会在 1 分钟内自动重建（可在仓库 Actions / Settings → Pages 看状态）。
+> 如果你的机器给 git 配了 `127.0.0.1:7890` 代理但代理软件没开，push 会报 `Failed to connect to 127.0.0.1 port 7890`：先启动代理，或临时执行
+> `git config --global --unset http.https://github.com/.proxy` 与 `git config --global --unset https.https://github.com/.proxy`，推送完再按原值（`http://127.0.0.1:7890`）加回去。
+
+---
+
 ## 1. 直接用
 
 ```
-web/index.html          ← 双击打开即可（不需要 Node、不需要 Python）
+web/index.html          ← 双击打开即可（不需要 Node、不需要 Python、不联网）
 ```
+
+也可以直接开浏览器访问线上版：**https://likewater16888-art.github.io/bearing-vision-guide/**（内容与本目录完全一致）。
 
 | 操作 | 说明 |
 | --- | --- |
@@ -49,7 +70,9 @@ web/index.html          ← 双击打开即可（不需要 Node、不需要 Pyth
 ## 3. 目录结构
 
 ```
-成品轴承操作手册细化版本.docx    原始手册（数据源）
+成品轴承操作手册细化版本.docx    原始手册（数据源，体积大，未随仓库分发）
+index.html                      仓库根入口：跳转到 web/index.html（GitHub Pages 用）
+.gitignore                      排除 backups/、tools/extracted/、原始 docx 与临时文件
 tools/
   extract_docx.py                docx → manual.txt / blocks.json / images/ / image_map.json
   build_web_data.py              blocks.json + image_map.json → web/data/manual.js、images.js、web/images/
@@ -75,6 +98,9 @@ docs/智能教学方案-v1.3.md          教学模块设计与后续（P1 场景
 ## 4. 重建数据（手册更新时）
 
 ```powershell
+# 0) 原始 docx 未随仓库分发（体积大）：先把《成品轴承操作手册细化版本.docx》放回项目根目录，
+#    或改下面 --docx 的路径；也可直接用别人已生成的 web/data/*.js 跳过 1) 2)。
+
 # 1) 解析 docx，抽出文本、表格、图片（需要 Python 3 + Pillow）
 python tools/extract_docx.py --docx "成品轴承操作手册细化版本.docx" --out tools/extracted
 
