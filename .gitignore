@@ -1,0 +1,20 @@
+# ---- 本地备份（不上传，避免仓库翻倍） ----
+backups/
+
+# ---- 管线中间产物（可由原始 docx 重跑生成） ----
+tools/extracted/
+
+# ---- 原始手册与临时调试文件（体积大 / 一次性，不入库） ----
+*.docx
+_*.py
+_*.txt
+_*.json
+_*.js
+tools/_*
+
+# ---- 系统 / 编辑器 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

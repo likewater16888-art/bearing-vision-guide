@@ -1,0 +1,22 @@
+node:fs:2427
+    return binding.writeFileUtf8(
+                   ^
+
+Error: EBUSY: resource busy or locked, open 'D:\VS&Cline\成品轴承调试学习计划\tools\check_web_data_report.txt'
+    at Object.writeFileSync (node:fs:2427:20)
+    at Object.<anonymous> (D:\VS&Cline\成品轴承调试学习计划\tools\check_web_data.js:173:4)
+    at Module._compile (node:internal/modules/cjs/loader:1734:14)
+    at Object..js (node:internal/modules/cjs/loader:1899:10)
+    at Module.load (node:internal/modules/cjs/loader:1469:32)
+    at Function._load (node:internal/modules/cjs/loader:1286:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
+    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:151:5)
+    at node:internal/main/run_main_module:33:47 {
+  errno: -4082,
+  code: 'EBUSY',
+  syscall: 'open',
+  path: 'D:\\VS&Cline\\成品轴承调试学习计划\\tools\\check_web_data_report.txt'
+}
+
+Node.js v23.9.0
