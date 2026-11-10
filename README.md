@@ -50,7 +50,7 @@ web/index.html          ← 双击打开即可（不需要 Node、不需要 Pyth
 > **看到的还是旧内容？** 浏览器会缓存 `app.js` / `knowledge.js`，若页面停留很久没刷新，直接切回标签是看不到更新的：
 > 1. 在页面按 `Ctrl` + `F5`（或 `Ctrl` + `Shift` + `R`）强制重载；
 > 2. 确认顶部品牌旁显示 `调试速查 v1.3`、页脚显示 `数据更新 2026-11-10`；
-> 3. 仍不对就关掉标签页重新双击 `web/index.html`，并确认打开的是 `d:\VS&Cline\成品轴承调试学习计划\web\index.html`（全盘只有这一份，没有第二副本）。
+> 3. 仍不对就关掉标签页重新双击 `web/index.html`，并确认打开的是本仓库里的这一份（不要打开别处的旧拷贝）；
 >
 > 注意：资源已自带 `?v=1.3` 版本号，改数据后若想再次强制换缓存，把 `index.html` 里七处 `?v=1.3`（style.css + 5 个 data js + learn.js + app.js）一起改成新版本号，并同步 `knowledge.js` 的 `meta.version`。
 
