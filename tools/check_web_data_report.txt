@@ -1,22 +1,11 @@
-node:fs:2427
-    return binding.writeFileUtf8(
-                   ^
-
-Error: EBUSY: resource busy or locked, open 'D:\VS&Cline\成品轴承调试学习计划\tools\check_web_data_report.txt'
-    at Object.writeFileSync (node:fs:2427:20)
-    at Object.<anonymous> (D:\VS&Cline\成品轴承调试学习计划\tools\check_web_data.js:173:4)
-    at Module._compile (node:internal/modules/cjs/loader:1734:14)
-    at Object..js (node:internal/modules/cjs/loader:1899:10)
-    at Module.load (node:internal/modules/cjs/loader:1469:32)
-    at Function._load (node:internal/modules/cjs/loader:1286:12)
-    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
-    at wrapModuleLoad (node:internal/modules/cjs/loader:235:24)
-    at Function.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:151:5)
-    at node:internal/main/run_main_module:33:47 {
-  errno: -4082,
-  code: 'EBUSY',
-  syscall: 'open',
-  path: 'D:\\VS&Cline\\成品轴承调试学习计划\\tools\\check_web_data_report.txt'
-}
-
-Node.js v23.9.0
+== 规模 ==
+工位 3 ｜ 产品 5 ｜ 专题 7 ｜ 参数 32 ｜ 案例 16 ｜ 点检 11 ｜ 红线 8
+图片索引 355 张 ｜ 手册章节 519 节
+图片索引可访问 355 / 355
+案例引用图片 16 处（无图案例 4 条）
+手册表格内图片 147 张，缺失 0 张
+教学层 检测项 32 项 ｜ 亮度锚点 17 条 ｜ 型号矩阵 4 类
+标准流程 23 步 ｜ 流程配图 44 张
+案例类型分布 {"漏检":2,"误判":9,"定位失败":5}
+参数分组 {"AI":4,"传统":13,"成像":4,"定位":5,"字符":3,"流程":3}
+章节层级 {"h0":1,"h1":9,"h2":48,"h3":106,"h4":80,"h5":52,"h6":45,"h7":113,"h8":60,"h9":5}

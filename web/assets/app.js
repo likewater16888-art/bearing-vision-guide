@@ -53,7 +53,9 @@
     docId: SECTIONS.length ? SECTIONS[0].id : "",
     caseFilter: "全部",
     glossGroup: "",
-    docFilter: ""
+    docFilter: "",
+    live: "",
+    drill: ""
   };
 
   function parseHash() {
@@ -61,10 +63,12 @@
     if (!h) { state.tab = "quick"; return; }
     var parts = h.split("/");
     var tab = parts[0] || "quick";
-    if (["quick", "guide", "case", "gloss", "doc", "learn"].indexOf(tab) < 0) tab = "quick";
+    if (["live", "quick", "drill", "doc", "guide", "case", "gloss", "learn"].indexOf(tab) < 0) tab = "quick";
     state.tab = tab;
     var arg = decodeURIComponent(parts[1] || "");
-    if (tab === "quick" && arg && (arg === "matrix" || stationById(arg))) state.station = arg;
+    if (tab === "quick" && arg && (arg === "matrix" || arg === "diff" || stationById(arg))) state.station = arg;
+    if (tab === "live") state.live = arg;
+    if (tab === "drill") state.drill = arg;
     if (tab === "guide" && arg) state.guide = arg;
     if (tab === "case") state.caseId = arg;
     if (tab === "doc" && arg) state.docId = arg;
@@ -217,26 +221,35 @@
   }
 
   /* ---------------- sidebar ---------------- */
-  var TABS = [["quick", "速查"], ["guide", "专题"], ["case", "案例"], ["gloss", "参数"], ["doc", "全文"], ["learn", "学"]];
+  var TABS = [["live", "现场"], ["quick", "速查"], ["drill", "练"], ["doc", "全文"]];
 
   function renderSide() {
     var html = '<div class="tabs">' + TABS.map(function (t) {
       return '<button class="tab' + (state.tab === t[0] ? " on" : "") + '" data-tab="' + t[0] + '">' + t[1] + "</button>";
     }).join("") + "</div>";
 
-    if (state.tab === "quick") {
-      html += '<div class="snav"><div class="grp">工位</div>';
+    if (state.tab === "live") {
+      if (window.LITEUI) html += LITEUI.side();
+    } else if (state.tab === "drill") {
+      if (window.LITEUI) html += LITEUI.drillSide();
+    } else if (state.tab === "quick") {
+      html += '<div class="snav"><div class="grp">工位（' + esc(machineName(state.machine)) + "）</div>";
       (KB.stations || []).forEach(function (st) {
-        var cam = String(st.camera[state.machine] || "").split("（")[0];
+        var cam = String((st.camera || {})[state.machine] || "").split("（")[0];
+        var n = (st.stages || []).filter(function (s) { return !s.m || s.m === state.machine; }).length;
         html += '<button class="' + (state.station === st.id ? "on" : "") + '" data-station="' + st.id + '">' +
-          esc(st.name) + '<small>' + esc(cam) + "</small></button>";
+          esc(st.name) + "<small>" + esc(cam) + (n ? " · " + n + " 阶段" : "") + "</small></button>";
       });
-      html += '<div class="grp">参考</div>';
+      html += '<div class="grp">机型</div>';
+      html += '<button class="' + (state.station === "diff" ? "on" : "") + '" data-route="#/quick/diff">两款机型差在哪<small>3 处</small></button>';
+      html += '<div class="grp">参考（干活时可跳过）</div>';
       html += '<button class="' + (state.station === "matrix" ? "on" : "") + '" data-route="#/quick/matrix">产品阶段矩阵<small>' +
         (KB.products || []).length + " 类</small></button>";
-      html += '<button data-tab="guide" data-guide="startup">开线点检<small>11 项</small></button>';
-      html += '<button data-tab="guide" data-guide="miss">漏检流程<small>6 步</small></button>';
-      html += '<button data-tab="guide" data-guide="overkill">误判流程<small>5 步</small></button>';
+      html += '<button data-tab="guide">专题<small>' + (KB.guides || []).length + " 篇</small></button>";
+      html += '<button data-tab="case">案例<small>' + (KB.cases || []).length + " 条</small></button>";
+      html += '<button data-tab="gloss">参数表<small>' + (KB.glossary || []).length + " 条</small></button>";
+      html += '<button data-route="#/learn">26 课系统学<small>' +
+        ((window.LEARN && window.LEARN.courses) ? window.LEARN.courses.length : 26) + " 课</small></button>";
       html += "</div>";
     } else if (state.tab === "guide") {
       html += '<div class="snav"><div class="grp">专题</div>';
@@ -429,44 +442,92 @@
     }).join("") + "</div>";
   }
 
+  /* 30 秒结论：速查页第一屏只给这三行 */
+  function simBlock(l) {
+    if (!l) return "";
+    return '<div class="sim">' +
+      '<div><b>看什么</b><span>' + esc(l.see) + "</span></div>" +
+      '<div><b>按这个顺序调</b><span>' + esc(l.tune) + "</span></div>" +
+      '<div class="no"><b>别这么做</b><span>' + esc(l.stop) + "</span></div>" +
+      "</div>";
+  }
+
+  /* 折叠区块：长内容默认收起，首屏只留结论 */
+  function acc(title, body, open) {
+    if (!body) return "";
+    return '<details class="acc"' + (open ? " open" : "") + '><summary>' + esc(title) +
+      '</summary><div class="acc-body">' + body + "</div></details>";
+  }
+
+  /* 两款机型差异（切换机型时高亮当前列） */
+  function machineDiffView() {
+    var rows = KB.machineDiff || [];
+    var html = '<div class="card"><div class="rowhead"><h2>8 工位 vs 6 工位：只差这 3 处</h2>' +
+      '<span class="tag gray">当前：' + esc(machineName(state.machine)) + "</span></div>" +
+      '<p class="note">软件、算法、参数区间、调参流程完全相同；会用一款，另一款直接上手。切换右上角机型，速查页的阶段数、相机分工与提示会跟着变。</p>' +
+      '<div class="tblwrap"><table><thead><tr><th style="width:130px">项目</th><th>8 工位</th><th>6 工位</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return "<tr><td><b>" + esc(r.item) + "</b></td><td" + (state.machine === "m8" ? ' class="hl"' : "") + ">" +
+          esc(r.m8) + "</td><td" + (state.machine === "m6" ? ' class="hl"' : "") + ">" + esc(r.m6) + "</td></tr>";
+      }).join("") + "</tbody></table></div>" +
+      '<div class="chips" style="margin-top:12px">' +
+      '<button class="chip" data-route="#/quick/face">端面工位（' + esc(machineName(state.machine)) + "）</button>" +
+      '<button class="chip" data-route="#/live/m6-config">6 工位凹陷整类漏检怎么查</button>' +
+      "</div></div>";
+    return html;
+  }
+
   function quickView() {
     if (state.station === "matrix") return productMatrix();
+    if (state.station === "diff") return machineDiffView();
     var st = stationById(state.station) || (KB.stations || [])[0];
     if (!st) return '<div class="card">知识库为空：请先运行 tools/build_web_data.py 生成 web/data/manual.js，并确认 web/data/knowledge.js 存在。</div>';
 
     var ch = chapterOf(st.name);
     var html = '<div class="card"><div class="rowhead"><h2>' + esc(st.name) + "工位</h2>" +
       '<span class="tag">' + esc(st.difficulty) + "</span>" +
-      '<span class="tag gray">' + esc(machineName(state.machine)) + " 相机 " + esc(st.camera[state.machine] || "—") + "</span>" +
+      '<span class="tag gray">' + esc(machineName(state.machine)) + " 相机 " + esc((st.camera || {})[state.machine] || "—") + "</span>" +
       (ch ? '<a class="tag gray" href="#/doc/' + ch.id + '">手册原文 →</a>' : "") +
       "</div>";
-    html += '<dl class="kv">' +
+    if (st.lite) html += simBlock(st.lite);
+    if (st.gating) html += '<div class="gate">' + esc(st.gating) + "</div>";
+    html += acc("算法 / 光源 / 相机分工 / 典型缺陷",
+      '<dl class="kv">' +
       "<dt>检测算法</dt><dd>" + esc(st.algo) + "</dd>" +
       "<dt>光源方案</dt><dd>" + esc(st.light) + "</dd>" +
-      "<dt>相机分工</dt><dd>8 工位 " + esc(st.camera.m8 || "—") + " ｜ 6 工位 " + esc(st.camera.m6 || "—") + "</dd>" +
+      "<dt>相机分工</dt><dd>8 工位 " + esc((st.camera || {}).m8 || "—") + " ｜ 6 工位 " + esc((st.camera || {}).m6 || "—") + "</dd>" +
       "<dt>典型缺陷</dt><dd>" + esc((st.defects || []).join("、")) + "</dd>" +
-      "</dl>";
-    if (st.gating) html += '<div class="gate">' + esc(st.gating) + "</div>";
-    if (st.teach && st.teach.intro) html += '<div class="quote">' + esc(st.teach.intro) + "</div>";
+      "</dl>" +
+      (st.teach && st.teach.intro ? '<div class="quote">' + esc(st.teach.intro) + "</div>" : ""));
     html += "</div>";
 
-    if (st.stages && st.stages.length) {
+    var stages = (st.stages || []).filter(function (s) { return !s.m || s.m === state.machine; });
+    if (stages.length) {
       html += '<div class="card"><h3>阶段成像与检测内容' +
-        (st.stages.length > 1 ? "（" + st.stages.length + " 个阶段）" : "") + "</h3>" +
-        st.stages.map(stageHtml).join("") + "</div>";
+        '<span class="tag gray">' + esc(machineName(state.machine)) + " · " + stages.length + " 阶段</span></h3>" +
+        ((st.stages || []).length > stages.length
+          ? '<p class="note">已隐藏 ' + ((st.stages || []).length - stages.length) + " 个另一机型专属阶段（切换右上角机型可查看）。</p>"
+          : "") +
+        (st.id === "face"
+          ? '<p class="note">阶段数按产品类型走：' + (state.machine === "m6"
+            ? "闭式 4 阶段 9 张（阶段一~三 + 阶段四·A 六帧频闪）；开式保持架 6 阶段 11 张（再加阶段四·B 背光缺钉、阶段五 铆钉复合光、阶段六窗口频闪）。"
+            : "闭式主相机只跑 3 阶段（阶段一~三），凹陷 / 气泡由 3 / 4 号独立跑马灯相机完成；开式保持架主相机 5 阶段（再加阶段四·B 背光缺钉、阶段五 铆钉复合光）。") + "</p>"
+          : "") +
+        stages.map(stageHtml).join("") + "</div>";
     }
 
-    html += teachBright(st);
-    if (st.teach && st.teach.pipeline) html += teachPipeline(st.teach.pipeline);
-    html += teachModels(st);
-    html += teachItems(st);
+    html += acc("亮度锚点 / 合格画面判据", teachBright(st));
+    if (st.teach && st.teach.pipeline) html += acc("处理的先后顺序（pipeline）", teachPipeline(st.teach.pipeline));
+    html += acc("型号 × 阶段矩阵", teachModels(st));
+    html += acc("检测项逐项速查（" + (((st.teach || {}).items || []).length) + " 项）", teachItems(st));
 
     if (st.params && st.params.length) {
-      html += '<div class="card"><h3>关键参数区间</h3><div class="tblwrap"><table><thead><tr><th>参数</th><th>合理区间</th><th>步长</th><th>说明</th></tr></thead><tbody>' +
+      html += acc("关键参数区间（真要调了再点开）",
+        '<div class="tblwrap"><table><thead><tr><th>参数</th><th>合理区间</th><th>步长</th><th>说明</th></tr></thead><tbody>' +
         st.params.map(function (p) {
           return "<tr><td><b>" + esc(p.name) + "</b></td><td class=\"num\">" + esc(p.range) +
             "</td><td class=\"num\">" + esc(p.step) + "</td><td>" + esc(p.note) + "</td></tr>";
-        }).join("") + "</tbody></table></div></div>";
+        }).join("") + "</tbody></table></div>");
     }
 
     if (st.rules && st.rules.length) {
@@ -477,13 +538,13 @@
     }
 
     var tfl = teachFlow(st);
-    if (tfl) html += tfl;
+    if (tfl) html += acc("标准化调参流程（按原版步序，含手册配图）", tfl);
     else if (st.flow && st.flow.length) {
-      html += '<div class="card"><h3>标准调参流程</h3><div class="flow">' +
+      html += acc("标准调参流程", '<div class="flow">' +
         st.flow.map(function (f) {
           return '<div class="step"><div class="n">' + esc(f.step) + '</div><div><div class="st">' + esc(f.title) + "</div>" +
             bullets(f.points) + "</div></div>";
-        }).join("") + "</div></div>";
+        }).join("") + "</div>");
     }
 
     if (st.pitfalls && st.pitfalls.length) {
@@ -493,21 +554,21 @@
         }).join("") + "</div>";
     }
 
-    html += teachQA(st);
+    html += acc("学员常问（按手册口径回答）", teachQA(st));
 
     var rel = (KB.cases || []).filter(function (c) {
       return (c.station || "").indexOf(st.name) >= 0;
     });
     if (rel.length) {
-      html += '<div class="card"><h3>本工位相关案例（' + rel.length + ' 条）</h3><div class="casegrid">' +
+      html += acc("本工位相关案例（" + rel.length + " 条）", '<div class="casegrid">' +
         rel.map(function (x) {
           return '<div class="casecard" data-case="' + x.id + '"><b>' + esc(x.title) + "</b>" +
             '<div class="st">' + caseTag(x.type) + " " + esc(x.station) + "</div>" +
             '<div class="st" style="margin-top:6px">' + esc(x.symptom) + "</div></div>";
-        }).join("") + "</div></div>";
+        }).join("") + "</div>");
     }
 
-    if (st.id === "face") html += productMatrix();
+    if (st.id === "face") html += acc("产品阶段矩阵（" + esc(machineName(state.machine)) + "）", productMatrix());
     return html;
   }
 
@@ -684,6 +745,14 @@
     renderSide();
     var view = $("#view"), html;
     if (state.tab === "quick") html = quickView();
+    else if (state.tab === "live") {
+      html = window.LITEUI ? LITEUI.view(state) :
+        '<div class="card"><h2>现场模块未加载</h2><p class="note">请确认 <code>web/data/scenarios.js</code> 与 <code>web/assets/lite.js</code> 存在。</p></div>';
+    }
+    else if (state.tab === "drill") {
+      html = window.LITEUI ? LITEUI.drillView(state) :
+        '<div class="card"><h2>练习模块未加载</h2><p class="note">请确认 <code>web/data/scenarios.js</code> 与 <code>web/assets/lite.js</code> 存在。</p></div>';
+    }
     else if (state.tab === "guide") html = guideView();
     else if (state.tab === "case") html = caseView();
     else if (state.tab === "gloss") html = glossView();
